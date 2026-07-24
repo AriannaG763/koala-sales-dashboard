@@ -1,0 +1,847 @@
+<title>Koalababycare — Sales &amp; Inventory Dashboard</title>
+<style>
+  :root {
+    color-scheme: light;
+    --paper:      #f8f7f4;
+    --surface:    #ffffff;
+    --border:     rgba(20,22,20,0.09);
+    --ink:        #16181a;
+    --ink-2:      #565a54;
+    --ink-muted:  #8a8d86;
+    --accent:     #3c6e71;
+    --accent-ink: #ffffff;
+    --accent-wash:#e4eeed;
+    --series-gross: #2a78d6;
+    --series-net:   #eb6834;
+    --good:      #0ca30c;
+    --good-wash: #e5f6e1;
+    --warning:   #b9790a;
+    --warning-wash: #fdf1d9;
+    --critical:  #d03b3b;
+    --critical-wash: #fbe7e5;
+    --grid:      #e6e4de;
+    --cat-babywearing: #2a78d6;
+    --cat-newborn:     #1baf7a;
+    --cat-breastfeeding: #e87ba4;
+    --cat-skincare:    #eda100;
+    --cat-altro:       #8a8d86;
+    --cat-muslin:      #eb6834;
+    --cat-pregnancy:   #4a3aa7;
+    --cat-other:       #008300;
+    --cat-nursery:     #e34948;
+    --shadow: 0 1px 2px rgba(20,22,20,0.04), 0 8px 24px -12px rgba(20,22,20,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --paper:      #101112;
+      --surface:    #17181a;
+      --border:     rgba(255,255,255,0.09);
+      --ink:        #f3f3f1;
+      --ink-2:      #bcbdb6;
+      --ink-muted:  #85877f;
+      --accent:     #6bb0ac;
+      --accent-ink: #0d1413;
+      --accent-wash:#1a2827;
+      --series-gross: #3987e5;
+      --series-net:   #d97a3f;
+      --good:      #33c733;
+      --good-wash: #12261a;
+      --warning:   #e0a530;
+      --warning-wash: #2a2213;
+      --critical:  #e66767;
+      --critical-wash: #2c1717;
+      --grid:      #26272a;
+      --cat-babywearing: #3987e5;
+      --cat-newborn:     #199e70;
+      --cat-breastfeeding: #d55181;
+      --cat-skincare:    #c98500;
+      --cat-altro:       #85877f;
+      --cat-muslin:      #d95926;
+      --cat-pregnancy:   #9085e9;
+      --cat-other:       #008300;
+      --cat-nursery:     #e66767;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper:      #101112;
+    --surface:    #17181a;
+    --border:     rgba(255,255,255,0.09);
+    --ink:        #f3f3f1;
+    --ink-2:      #bcbdb6;
+    --ink-muted:  #85877f;
+    --accent:     #6bb0ac;
+    --accent-ink: #0d1413;
+    --accent-wash:#1a2827;
+    --series-gross: #3987e5;
+    --series-net:   #d97a3f;
+    --good:      #33c733;
+    --good-wash: #12261a;
+    --warning:   #e0a530;
+    --warning-wash: #2a2213;
+    --critical:  #e66767;
+    --critical-wash: #2c1717;
+    --grid:      #26272a;
+    --cat-babywearing: #3987e5;
+    --cat-newborn:     #199e70;
+    --cat-breastfeeding: #d55181;
+    --cat-skincare:    #c98500;
+    --cat-altro:       #85877f;
+    --cat-muslin:      #d95926;
+    --cat-pregnancy:   #9085e9;
+    --cat-other:       #008300;
+    --cat-nursery:     #e66767;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 28px 20px 64px;
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+
+  /* header */
+  .masthead {
+    display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap;
+    padding-bottom: 4px;
+  }
+  .masthead .id { display: flex; align-items: center; gap: 12px; }
+  .mark {
+    width: 40px; height: 40px; border-radius: 10px; background: var(--accent); color: var(--accent-ink);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 17px; flex: none;
+  }
+  h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  .sub { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+  .snapshot { text-align: right; font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+  .snapshot strong { color: var(--ink-2); font-weight: 600; }
+  .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background: var(--good); margin-right: 5px; box-shadow: 0 0 0 2px var(--good-wash); }
+
+  /* trend chart controls */
+  .trend-controls { display: flex; gap: 10px; margin-bottom: 4px; flex-wrap: wrap; align-items: center; }
+  .metric-toggle { display: flex; gap: 4px; background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 3px; margin-left: auto; }
+  .metric-btn {
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: none; border: none;
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  }
+  .metric-btn.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+
+  /* panels */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    box-shadow: var(--shadow); padding: 18px 20px 16px;
+  }
+  .panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px; flex-wrap: wrap; }
+  .panel-title { font-size: 14.5px; font-weight: 700; }
+  .panel-note { font-size: 12px; color: var(--ink-muted); }
+
+  .chart-wrap { position: relative; }
+  svg.chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .axis-label { fill: var(--ink-muted); font-size: 10.5px; }
+  .gridline { stroke: var(--grid); stroke-width: 1; }
+  .hover-col { fill: transparent; }
+  .crosshair { stroke: var(--ink-muted); stroke-width: 1; stroke-dasharray: 3 3; opacity: 0; pointer-events: none; }
+  .dot-gross { r: 3.5; opacity: 0; pointer-events: none; fill: var(--series-gross); }
+
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--ink); color: var(--paper);
+    font-size: 12px; padding: 8px 10px; border-radius: 8px; line-height: 1.5; opacity: 0; transform: translate(-50%, -100%);
+    transition: opacity 0.08s ease; white-space: nowrap; z-index: 5; box-shadow: var(--shadow);
+  }
+  :root[data-theme="dark"] .tooltip, @media (prefers-color-scheme: dark) { }
+  .tooltip .t-date { font-weight: 700; margin-bottom: 3px; }
+  .tooltip .t-row { display: flex; justify-content: space-between; gap: 14px; }
+  .tooltip .t-row .k { color: var(--ink-muted); }
+
+  /* tables */
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-muted); font-weight: 600; padding: 0 10px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 9px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* product detail table */
+  .detail-warning {
+    display: flex; gap: 8px; font-size: 12.5px; color: var(--ink-2); background: var(--paper);
+    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 4px 0 14px; line-height: 1.5;
+  }
+  .detail-controls { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+  .search-input, .cat-select {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px;
+  }
+  .search-input { flex: 1; min-width: 180px; }
+  .search-input:focus, .cat-select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .cat-select { min-width: 170px; }
+  .detail-expand-buttons { display: flex; gap: 8px; margin-left: auto; }
+  .ghost-btn {
+    font: inherit; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  .ghost-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
+  .ghost-btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .cat-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .cat-pill .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+
+  /* date range picker */
+  .date-range-panel { padding: 16px 20px; }
+  .date-range-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-bottom: 12px; }
+  .date-field { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--ink-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .date-field input[type="date"] {
+    font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 6px 10px; text-transform: none; letter-spacing: normal; font-weight: 400;
+  }
+  .date-range-summary { font-size: 13px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .date-range-presets { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* tree rows */
+  #detailTable .row-toggle {
+    display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;
+    border: none; background: none; cursor: pointer; color: var(--ink-muted); font-size: 10px; flex: none;
+    transition: transform 0.12s ease;
+  }
+  #detailTable .row-toggle.open { transform: rotate(90deg); }
+  #detailTable tr.row-cat { background: var(--paper); cursor: pointer; }
+  #detailTable tr.row-cat .name-cell { font-weight: 700; font-size: 13.5px; }
+  #detailTable tr.row-cat td { border-bottom: 1px solid var(--border); }
+  #detailTable tr.row-product { cursor: pointer; }
+  #detailTable tr.row-product .name-cell { font-weight: 600; padding-left: 30px; }
+  #detailTable tr.row-variant .name-cell { padding-left: 54px; color: var(--ink-2); font-size: 12.5px; }
+  #detailTable tr.row-cat:hover, #detailTable tr.row-product:hover { background: var(--accent-wash); }
+  #detailTable .name-cell { display: flex; align-items: center; gap: 6px; }
+  #detailTable .count-badge { color: var(--ink-muted); font-weight: 400; font-size: 11.5px; }
+  #detailTable th.detail-metric-col, #detailTable td.detail-metric-col {
+    color: var(--ink-muted); font-size: 11px; border-right: 1px solid var(--border); white-space: nowrap;
+  }
+  #detailTable th.detail-date-col, #detailTable td.detail-date-col {
+    text-align: right; font-variant-numeric: tabular-nums; font-size: 11px; padding: 6px 8px; white-space: nowrap;
+  }
+  #detailTable th.detail-total-col, #detailTable td.detail-total-col {
+    text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; padding: 6px 10px;
+    border-left: 1px solid var(--border); background: var(--paper); white-space: nowrap;
+  }
+  #detailTable tr.row-metric-primary td { border-bottom: none; }
+  #detailTable .zero-val { color: var(--ink-muted); }
+
+  footer { font-size: 12px; color: var(--ink-muted); text-align: center; padding-top: 8px; line-height: 1.7; }
+  footer a { text-decoration: underline; text-underline-offset: 2px; }
+
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <div class="id">
+      <div class="mark">K</div>
+      <div>
+        <h1>Koalababycare — Sales &amp; Inventory Dashboard</h1>
+        <div class="sub">koalababycare.com · Shopify Plus · valori in EUR</div>
+      </div>
+    </div>
+    <div class="snapshot">
+      <div><span class="live-dot"></span>Istantanea generata il <strong id="genDate">—</strong></div>
+      <div>Il periodo si seleziona qui sotto · non si aggiorna da sola, va ripubblicata</div>
+    </div>
+  </div>
+
+  <div class="panel date-range-panel">
+    <div class="date-range-row">
+      <label class="date-field">Dal <input type="date" id="dateFrom"></label>
+      <label class="date-field">Al <input type="date" id="dateTo"></label>
+      <span class="date-range-summary" id="dateRangeSummary"></span>
+    </div>
+    <div class="date-range-presets">
+      <button type="button" class="ghost-btn" data-preset="yesterday">Ieri</button>
+      <button type="button" class="ghost-btn" data-preset="last3">Ultimi 3 giorni</button>
+      <button type="button" class="ghost-btn" data-preset="last7">Ultimi 7 giorni</button>
+      <button type="button" class="ghost-btn" data-preset="last14">Ultimi 14 giorni</button>
+      <button type="button" class="ghost-btn" data-preset="last30">Ultimi 30 giorni</button>
+      <button type="button" class="ghost-btn" data-preset="mtd">Da inizio mese</button>
+      <button type="button" class="ghost-btn" data-preset="last3m">Ultimi 3 mesi</button>
+      <button type="button" class="ghost-btn" data-preset="ytd">Da inizio anno</button>
+      <button type="button" class="ghost-btn" data-preset="all">Tutto il periodo</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Andamento vendite giornaliere</div>
+      </div>
+    </div>
+    <div class="detail-warning">
+      ⚠️ Dati dal foglio Google "Prodotti da Shopify" — perimetro di mercati più ampio (include anche US, UK, CA, AU, ecc.) rispetto al solo store koalababycare.com collegato via Shopify.
+    </div>
+    <div class="trend-controls">
+      <select id="trendCategory" class="cat-select"></select>
+      <select id="trendProduct" class="cat-select"></select>
+      <div class="metric-toggle">
+        <button type="button" class="metric-btn active" data-metric="revenue">Fatturato totale</button>
+        <button type="button" class="metric-btn" data-metric="units">Pezzi venduti</button>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <svg class="chart" id="trendChart" viewBox="0 0 960 300" preserveAspectRatio="none"></svg>
+      <div class="tooltip" id="trendTooltip"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Dettaglio prodotti per categoria e variante</div>
+        <div class="panel-note">Fonte: foglio Google "Prodotti da Shopify" (aggiornato quotidianamente)</div>
+      </div>
+      <div class="panel-note" id="detailCount"></div>
+    </div>
+    <div class="detail-warning">
+      ⚠️ Questo foglio copre un perimetro di mercati più ampio (include anche US, UK, CA, AU, ecc.) rispetto al solo store koalababycare.com collegato via Shopify.
+    </div>
+    <div class="detail-controls">
+      <input type="text" id="detailSearch" class="search-input" placeholder="Cerca prodotto o variante…">
+      <select id="detailCategory" class="cat-select"></select>
+      <select id="detailSortBy" class="cat-select">
+        <option value="revenue">Ordina per fatturato</option>
+        <option value="units">Ordina per unità</option>
+        <option value="name">Ordina alfabeticamente</option>
+      </select>
+      <div class="detail-expand-buttons">
+        <button type="button" id="expandAllBtn" class="ghost-btn">Espandi tutto</button>
+        <button type="button" id="collapseAllBtn" class="ghost-btn">Comprimi tutto</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="detailTable">
+        <thead>
+          <tr id="detailHeadRow">
+            <th class="detail-name-col">Categoria › Prodotto › Variante</th>
+            <th class="detail-metric-col">Metrica</th>
+          </tr>
+        </thead>
+        <tbody id="detailBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>
+    Dati aggregati dal foglio Google "Prodotti da Shopify" · questa è un'istantanea statica, non un collegamento live.<br>
+    Per tenerla aggiornata, ripubblicare periodicamente con dati freschi.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var fmtEUR = function (n, decimals) {
+    return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', minimumFractionDigits: decimals === undefined ? 2 : decimals, maximumFractionDigits: decimals === undefined ? 2 : decimals }).format(n);
+  };
+  var fmtInt = function (n) { return new Intl.NumberFormat('it-IT').format(n); };
+
+  // Category overrides applied to every raw row from the sheet, so a future data refresh
+  // doesn't need this reclassification redone by hand. "Altro" and "Other" are the same
+  // bucket in the source sheet (merged here); a few products are recategorized by name
+  // regardless of what the sheet currently labels them.
+  function normalizeCategory(rawCategory, product) {
+    var p = product.toLowerCase();
+    if (p.indexOf('neck support') !== -1) return 'Babywearing';
+    if (p.indexOf('cuddle breeze') !== -1) return 'Babywearing';
+    if (p.indexOf('cuddle wrap') !== -1) return 'Babywearing';
+    if (p.indexOf('corso babywearing') !== -1) return 'Babywearing';
+    if (p.indexOf('newborn bag') !== -1) return 'Pregnancy';
+    if (rawCategory === 'Altro') return 'Other';
+    return rawCategory;
+  }
+
+  var CATEGORY_META = {
+    'Babywearing':    { color: 'var(--cat-babywearing)',   label: 'Babywearing' },
+    'Newborn Pillows':{ color: 'var(--cat-newborn)',       label: 'Newborn Pillows' },
+    'Breastfeeding':  { color: 'var(--cat-breastfeeding)', label: 'Breastfeeding' },
+    'Skincare':       { color: 'var(--cat-skincare)',      label: 'Skincare' },
+    'Pregnancy':      { color: 'var(--cat-pregnancy)',     label: 'Pregnancy' },
+    'Muslin Cloths':  { color: 'var(--cat-muslin)',        label: 'Muslin Cloths' },
+    'Nursery & Bath Time': { color: 'var(--cat-nursery)',  label: 'Nursery & Bath Time' },
+    'Other':          { color: 'var(--cat-other)',         label: 'Other' }
+  };
+
+  // Daily units/revenue aggregated from the "Prodotti da Shopify" Google Sheet (tab "Dati"),
+  // grouped by date x category x product (variants merged). Covers the full range currently in the sheet
+  // (2026-01-01 onward) so the in-page date picker can select any sub-range, not just the last 30 days.
+  // Row: [date, category, product, units, revenue]
+  var dailyCatProduct = __DAILY_CAT_PRODUCT_JSON__;
+  dailyCatProduct.forEach(function (r) { r[1] = normalizeCategory(r[1], r[2]); });
+
+  document.getElementById('genDate').textContent = '__GEN_DATE__';
+
+  // ---------- Shared date-range state, used by both the trend chart and the detail table ----------
+  var DASH = { start: null, end: null, minDate: null, maxDate: null, rerenders: [] };
+
+  function addDaysStr(dateStr, delta) {
+    var d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + delta);
+    return d.toISOString().slice(0, 10);
+  }
+  function addMonthsStr(dateStr, delta) {
+    var d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + delta);
+    return d.toISOString().slice(0, 10);
+  }
+  function startOfMonthStr(dateStr) { return dateStr.slice(0, 7) + '-01'; }
+  function startOfYearStr(dateStr) { return dateStr.slice(0, 4) + '-01-01'; }
+  function dateRangeList(start, end) {
+    var out = [], cur = start, guard = 0;
+    while (cur <= end && guard < 5000) { out.push(cur); cur = addDaysStr(cur, 1); guard++; }
+    return out;
+  }
+  function fmtItDate(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00Z');
+    return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear();
+  }
+  function dashRerenderAll() { DASH.rerenders.forEach(function (fn) { fn(); }); }
+
+  // ---------- Date range picker ----------
+  (function () {
+    var fromInput = document.getElementById('dateFrom');
+    var toInput = document.getElementById('dateTo');
+    var summary = document.getElementById('dateRangeSummary');
+    var presetBtns = Array.prototype.slice.call(document.querySelectorAll('.date-range-presets .ghost-btn'));
+
+    var seen = {};
+    dailyCatProduct.forEach(function (r) { seen[r[0]] = true; });
+    var sortedDates = Object.keys(seen).sort();
+    DASH.minDate = sortedDates[0];
+    DASH.maxDate = sortedDates[sortedDates.length - 1];
+    fromInput.min = toInput.min = DASH.minDate;
+    fromInput.max = toInput.max = DASH.maxDate;
+
+    function updateSummary() {
+      var days = Math.round((new Date(DASH.end + 'T00:00:00Z') - new Date(DASH.start + 'T00:00:00Z')) / 86400000) + 1;
+      var rows = dailyCatProduct.filter(function (r) { return r[0] >= DASH.start && r[0] <= DASH.end; }).length;
+      summary.textContent = fmtItDate(DASH.start) + ' → ' + fmtItDate(DASH.end) + ' (' + days + ' giorni, ' + fmtInt(rows) + ' righe)';
+    }
+
+    function setRange(start, end, presetName) {
+      DASH.start = start; DASH.end = end;
+      fromInput.value = start; toInput.value = end;
+      presetBtns.forEach(function (b) { b.classList.toggle('active', presetName !== null && b.getAttribute('data-preset') === presetName); });
+      updateSummary();
+      dashRerenderAll();
+    }
+
+    function presetRange(name) {
+      var max = DASH.maxDate, min = DASH.minDate, s;
+      if (name === 'yesterday') { s = addDaysStr(max, -1); setRange(s, s, name); return; }
+      if (name === 'last3') s = addDaysStr(max, -2);
+      else if (name === 'last7') s = addDaysStr(max, -6);
+      else if (name === 'last14') s = addDaysStr(max, -13);
+      else if (name === 'last30') s = addDaysStr(max, -29);
+      else if (name === 'mtd') s = startOfMonthStr(max);
+      else if (name === 'last3m') s = addMonthsStr(max, -3);
+      else if (name === 'ytd') s = startOfYearStr(max);
+      else s = min; // 'all'
+      if (s < min) s = min;
+      setRange(s, max, name);
+    }
+
+    presetBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () { presetRange(btn.getAttribute('data-preset')); });
+    });
+    fromInput.addEventListener('change', function () { if (fromInput.value) setRange(fromInput.value, toInput.value || DASH.end, null); });
+    toInput.addEventListener('change', function () { if (toInput.value) setRange(fromInput.value || DASH.start, toInput.value, null); });
+
+    presetRange('last30');
+  })();
+
+  // ---------- Dynamic trend chart (category/product/metric selectable) ----------
+  (function () {
+    var catSelect = document.getElementById('trendCategory');
+    var productSelect = document.getElementById('trendProduct');
+    var metricBtns = Array.prototype.slice.call(document.querySelectorAll('.metric-btn'));
+    var svg = document.getElementById('trendChart');
+    var tooltip = document.getElementById('trendTooltip');
+
+    var state = { category: 'all', product: 'all', metric: 'revenue' };
+
+    var allCatOpt = document.createElement('option');
+    allCatOpt.value = 'all'; allCatOpt.textContent = 'Tutte le categorie';
+    catSelect.appendChild(allCatOpt);
+    Object.keys(CATEGORY_META).filter(function (c) {
+      return dailyCatProduct.some(function (r) { return r[1] === c; });
+    }).forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c; o.textContent = CATEGORY_META[c].label;
+      catSelect.appendChild(o);
+    });
+
+    function populateProducts() {
+      var prev = productSelect.value;
+      productSelect.innerHTML = '';
+      var allOpt = document.createElement('option');
+      allOpt.value = 'all'; allOpt.textContent = state.category === 'all' ? 'Tutti i prodotti' : 'Tutti i prodotti della categoria';
+      productSelect.appendChild(allOpt);
+      var products = Array.from(new Set(
+        dailyCatProduct.filter(function (r) { return state.category === 'all' || r[1] === state.category; }).map(function (r) { return r[2]; })
+      )).sort(function (a, b) { return a.localeCompare(b); });
+      products.forEach(function (p) {
+        var o = document.createElement('option');
+        o.value = p; o.textContent = p;
+        productSelect.appendChild(o);
+      });
+      productSelect.value = products.indexOf(prev) !== -1 ? prev : 'all';
+      state.product = productSelect.value;
+    }
+    populateProducts();
+
+    function seriesForState() {
+      var allDates = dateRangeList(DASH.start, DASH.end);
+      var rows = dailyCatProduct.filter(function (r) {
+        if (r[0] < DASH.start || r[0] > DASH.end) return false;
+        if (state.category !== 'all' && r[1] !== state.category) return false;
+        if (state.product !== 'all' && r[2] !== state.product) return false;
+        return true;
+      });
+      var byDate = {};
+      allDates.forEach(function (d) { byDate[d] = 0; });
+      rows.forEach(function (r) {
+        byDate[r[0]] += state.metric === 'units' ? r[3] : r[4];
+      });
+      return allDates.map(function (d) { return [d, byDate[d]]; });
+    }
+
+    var W = 960, H = 300, padL = 54, padR = 12, padT = 14, padB = 30;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var svgNS = 'http://www.w3.org/2000/svg';
+    function el(tag, attrs) {
+      var e = document.createElementNS(svgNS, tag);
+      for (var k in attrs) e.setAttribute(k, attrs[k]);
+      return e;
+    }
+
+    function render() {
+      var series = seriesForState();
+      var n = series.length;
+      var maxVal = Math.max.apply(null, series.map(function (d) { return d[1]; })) * 1.08 || 1;
+
+      function xAt(i) { return n > 1 ? padL + (i / (n - 1)) * plotW : padL + plotW / 2; }
+      function yAt(v) { return padT + plotH - (v / maxVal) * plotH; }
+
+      svg.innerHTML = '';
+
+      var gridSteps = 4;
+      for (var g = 0; g <= gridSteps; g++) {
+        var v = maxVal * (g / gridSteps);
+        var y = yAt(v);
+        svg.appendChild(el('line', { x1: padL, x2: W - padR, y1: y, y2: y, class: 'gridline' }));
+        var label = el('text', { x: padL - 8, y: y + 3, class: 'axis-label', 'text-anchor': 'end' });
+        label.textContent = state.metric === 'units' ? fmtInt(Math.round(v)) : '€' + Math.round(v / 1000) + 'k';
+        svg.appendChild(label);
+      }
+
+      var tickStep = Math.max(1, Math.round(n / 8));
+      for (var i = 0; i < n; i += tickStep) {
+        var lbl = el('text', { x: xAt(i), y: H - 8, class: 'axis-label', 'text-anchor': 'middle' });
+        var d0 = new Date(series[i][0] + 'T00:00:00Z');
+        lbl.textContent = d0.getDate() + '/' + (d0.getMonth() + 1);
+        svg.appendChild(lbl);
+      }
+      var lastLbl = el('text', { x: xAt(n - 1), y: H - 8, class: 'axis-label', 'text-anchor': 'end' });
+      var dl = new Date(series[n - 1][0] + 'T00:00:00Z');
+      lastLbl.textContent = dl.getDate() + '/' + (dl.getMonth() + 1);
+      svg.appendChild(lastLbl);
+
+      var areaPts = series.map(function (d, i) { return xAt(i) + ',' + yAt(d[1]); }).join(' L ');
+      var areaPath = 'M ' + xAt(0) + ',' + yAt(0) + ' L ' + areaPts + ' L ' + xAt(n - 1) + ',' + yAt(0) + ' Z';
+      svg.appendChild(el('path', { d: areaPath, fill: 'var(--series-gross)', opacity: '0.07', stroke: 'none' }));
+
+      var linePts = series.map(function (d, i) { return xAt(i) + ',' + yAt(d[1]); }).join(' L ');
+      svg.appendChild(el('path', { d: 'M ' + linePts, fill: 'none', stroke: 'var(--series-gross)', 'stroke-width': '2', 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+
+      svg.appendChild(el('circle', { cx: xAt(n - 1), cy: yAt(series[n - 1][1]), r: 4, fill: 'var(--series-gross)' }));
+
+      var crosshair = el('line', { x1: 0, x2: 0, y1: padT, y2: H - padB, class: 'crosshair' });
+      svg.appendChild(crosshair);
+      var dot = el('circle', { class: 'dot-gross' });
+      svg.appendChild(dot);
+
+      var colW = plotW / n;
+      series.forEach(function (d, i) {
+        var rect = el('rect', { x: xAt(i) - colW / 2, y: padT, width: colW, height: plotH, class: 'hover-col' });
+        rect.addEventListener('mouseenter', function () { showPoint(i); });
+        svg.appendChild(rect);
+      });
+      svg.addEventListener('mouseleave', function () {
+        crosshair.style.opacity = 0; dot.style.opacity = 0; tooltip.style.opacity = 0;
+      });
+
+      function showPoint(i) {
+        var d = series[i];
+        var x = xAt(i);
+        crosshair.setAttribute('x1', x); crosshair.setAttribute('x2', x); crosshair.style.opacity = 1;
+        dot.setAttribute('cx', x); dot.setAttribute('cy', yAt(d[1])); dot.style.opacity = 1;
+
+        var dt = new Date(d[0] + 'T00:00:00Z');
+        var dateLabel = dt.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + (d[0] === DASH.maxDate ? ' · parziale' : '');
+        var metricLabel = state.metric === 'units' ? 'Pezzi venduti' : 'Fatturato totale';
+        var valueLabel = state.metric === 'units' ? fmtInt(d[1]) : fmtEUR(d[1], 0);
+        tooltip.innerHTML =
+          '<div class="t-date">' + dateLabel + '</div>' +
+          '<div class="t-row"><span class="k">' + metricLabel + '</span><span>' + valueLabel + '</span></div>';
+        tooltip.style.left = (x / W * 100) + '%';
+        tooltip.style.top = (yAt(d[1]) / H * 100) + '%';
+        tooltip.style.opacity = 1;
+      }
+    }
+
+    catSelect.addEventListener('change', function () { state.category = catSelect.value; populateProducts(); render(); });
+    productSelect.addEventListener('change', function () { state.product = productSelect.value; render(); });
+    metricBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        metricBtns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        state.metric = btn.getAttribute('data-metric');
+        render();
+      });
+    });
+
+    DASH.rerenders.push(render);
+    render();
+  })();
+
+  // Daily units/revenue per category/product/variant, aggregated from the "Prodotti da Shopify"
+  // Google Sheet (tab "Dati"). Covers the full range currently in the sheet (2026-01-01 onward) so the
+  // in-page date picker can select any sub-range, not just the last 30 days.
+  // Row: [date, category, product, variant, units, revenue]
+  var productDetailDaily = __PRODUCT_DETAIL_DAILY_JSON__;
+  productDetailDaily.forEach(function (r) { r[1] = normalizeCategory(r[1], r[2]); });
+
+  // ---------- Product detail tree (category › product › variant), daily columns + Totale ----------
+  (function () {
+    var searchInput = document.getElementById('detailSearch');
+    var catSelect = document.getElementById('detailCategory');
+    var sortSelect = document.getElementById('detailSortBy');
+    var expandAllBtn = document.getElementById('expandAllBtn');
+    var collapseAllBtn = document.getElementById('collapseAllBtn');
+    var body = document.getElementById('detailBody');
+    var countLabel = document.getElementById('detailCount');
+    var headRow = document.getElementById('detailHeadRow');
+
+    var ALL_DATES = [];
+
+    function rebuildDateHeaders() {
+      Array.prototype.slice.call(headRow.querySelectorAll('.detail-date-col, .detail-total-col')).forEach(function (th) { th.remove(); });
+      ALL_DATES.forEach(function (d) {
+        var th = document.createElement('th');
+        th.className = 'detail-date-col';
+        var dt = new Date(d + 'T00:00:00Z');
+        th.textContent = dt.getDate() + '/' + (dt.getMonth() + 1);
+        headRow.appendChild(th);
+      });
+      var totalTh = document.createElement('th');
+      totalTh.className = 'detail-total-col';
+      totalTh.textContent = 'Totale';
+      headRow.appendChild(totalTh);
+    }
+
+    var categories = Object.keys(CATEGORY_META).filter(function (c) {
+      return productDetailDaily.some(function (r) { return r[1] === c; });
+    });
+    var opt = document.createElement('option');
+    opt.value = 'all'; opt.textContent = 'Tutte le categorie';
+    catSelect.appendChild(opt);
+    categories.forEach(function (c) {
+      var combos = {};
+      productDetailDaily.forEach(function (r) { if (r[1] === c) combos[r[2] + '|||' + r[3]] = true; });
+      var o = document.createElement('option');
+      o.value = c; o.textContent = CATEGORY_META[c].label + ' (' + Object.keys(combos).length + ')';
+      catSelect.appendChild(o);
+    });
+
+    var state = { search: '', category: 'all', sortBy: 'revenue' };
+    var openCats = {};
+    var openProducts = {};
+
+    function newNode(name) { return { name: name, units: 0, revenue: 0, byDate: {} }; }
+    function addDate(node, date, units, revenue) {
+      if (!node.byDate[date]) node.byDate[date] = { units: 0, revenue: 0 };
+      node.byDate[date].units += units;
+      node.byDate[date].revenue += revenue;
+      node.units += units;
+      node.revenue += revenue;
+    }
+
+    function buildTree() {
+      var cats = {};
+      productDetailDaily.forEach(function (r) {
+        var date = r[0], category = r[1], product = r[2], variant = r[3], units = r[4], revenue = r[5];
+        if (date < DASH.start || date > DASH.end) return;
+        if (!cats[category]) cats[category] = { name: category, units: 0, revenue: 0, byDate: {}, products: {} };
+        var cat = cats[category];
+        addDate(cat, date, units, revenue);
+        if (!cat.products[product]) cat.products[product] = { name: product, units: 0, revenue: 0, byDate: {}, variants: {} };
+        var pg = cat.products[product];
+        addDate(pg, date, units, revenue);
+        if (!pg.variants[variant]) pg.variants[variant] = newNode(variant);
+        var vg = pg.variants[variant];
+        addDate(vg, date, units, revenue);
+      });
+      return cats;
+    }
+
+    function sortNodes(arr) {
+      var by = state.sortBy;
+      return arr.slice().sort(function (a, b) {
+        if (by === 'name') return a.name.localeCompare(b.name);
+        if (by === 'units') return b.units - a.units;
+        return b.revenue - a.revenue;
+      });
+    }
+
+    function matchesSearch(name) {
+      if (!state.search) return true;
+      return name.toLowerCase().indexOf(state.search) !== -1;
+    }
+
+    function cellHtml(v, isRevenue) {
+      var val = v ? (isRevenue ? v.revenue : v.units) : 0;
+      if (!val) return '<span class="zero-val">–</span>';
+      return isRevenue ? fmtEUR(val, 0) : fmtInt(val);
+    }
+
+    function metricRows(node) {
+      var unitCells = ALL_DATES.map(function (d) {
+        return '<td class="detail-date-col">' + cellHtml(node.byDate[d], false) + '</td>';
+      }).join('');
+      var revCells = ALL_DATES.map(function (d) {
+        return '<td class="detail-date-col">' + cellHtml(node.byDate[d], true) + '</td>';
+      }).join('');
+      return {
+        unitsRow: unitCells + '<td class="detail-total-col">' + fmtInt(node.units) + '</td>',
+        revenueRow: revCells + '<td class="detail-total-col">' + fmtEUR(node.revenue, 0) + '</td>'
+      };
+    }
+
+    function sumNodesByDate(nodes) {
+      var out = newNode('');
+      nodes.forEach(function (n) {
+        Object.keys(n.byDate).forEach(function (d) {
+          addDate(out, d, n.byDate[d].units, n.byDate[d].revenue);
+        });
+      });
+      return out;
+    }
+
+    function render() {
+      ALL_DATES = dateRangeList(DASH.start, DASH.end);
+      rebuildDateHeaders();
+
+      var tree = buildTree();
+      var searchActive = !!state.search;
+      var catNames = Object.keys(tree).filter(function (c) {
+        return state.category === 'all' || c === state.category;
+      });
+      var catNodes = sortNodes(catNames.map(function (c) { return tree[c]; }));
+
+      var html = '';
+      var shownLeaves = 0;
+      var allCombos = {};
+      productDetailDaily.forEach(function (r) {
+        if (r[0] < DASH.start || r[0] > DASH.end) return;
+        allCombos[r[1] + '|||' + r[2] + '|||' + r[3]] = true;
+      });
+      var totalLeaves = Object.keys(allCombos).length;
+
+      catNodes.forEach(function (cat) {
+        var meta = CATEGORY_META[cat.name] || { color: 'var(--ink-muted)', label: cat.name };
+        var productNodes = sortNodes(Object.keys(cat.products).map(function (p) { return cat.products[p]; }));
+
+        var visibleProducts = productNodes.map(function (pg) {
+          var variants = sortNodes(Object.keys(pg.variants).map(function (v) { return pg.variants[v]; }));
+          if (searchActive) variants = variants.filter(function (v) { return matchesSearch(v.name) || matchesSearch(pg.name); });
+          return { pg: pg, variants: variants, stats: searchActive ? sumNodesByDate(variants) : pg };
+        }).filter(function (x) { return !searchActive || x.variants.length > 0; });
+
+        if (searchActive && visibleProducts.length === 0) return;
+
+        var catStats = searchActive ? sumNodesByDate(visibleProducts.reduce(function (acc, x) { return acc.concat(x.variants); }, [])) : cat;
+        var catKey = cat.name;
+        var catOpen = searchActive || !!openCats[catKey];
+        var catRows = metricRows(catStats);
+        html += '<tr class="row-cat row-metric-primary" data-toggle="cat" data-key="' + catKey + '">' +
+          '<td><span class="name-cell"><button type="button" class="row-toggle' + (catOpen ? ' open' : '') + '">▶</button>' +
+          '<span class="cat-pill"><span class="dot" style="background:' + meta.color + '"></span>' + meta.label + '</span>' +
+          '<span class="count-badge">' + visibleProducts.length + ' prodott' + (visibleProducts.length === 1 ? 'o' : 'i') + '</span></span></td>' +
+          '<td class="detail-metric-col">Unità</td>' + catRows.unitsRow + '</tr>';
+        html += '<tr class="row-cat row-metric-secondary" data-toggle="cat" data-key="' + catKey + '">' +
+          '<td></td><td class="detail-metric-col">Fatturato</td>' + catRows.revenueRow + '</tr>';
+
+        if (catOpen) {
+          visibleProducts.forEach(function (entry) {
+            var pg = entry.pg, variants = entry.variants;
+            var productKey = catKey + '::' + pg.name;
+            var productOpen = searchActive || !!openProducts[productKey];
+            var prodRows = metricRows(entry.stats);
+            html += '<tr class="row-product row-metric-primary" data-toggle="product" data-key="' + productKey + '">' +
+              '<td><span class="name-cell"><button type="button" class="row-toggle' + (productOpen ? ' open' : '') + '">▶</button>' +
+              '<span>' + pg.name + '</span>' +
+              '<span class="count-badge">' + variants.length + ' variant' + (variants.length === 1 ? 'e' : 'i') + '</span></span></td>' +
+              '<td class="detail-metric-col">Unità</td>' + prodRows.unitsRow + '</tr>';
+            html += '<tr class="row-product row-metric-secondary" data-toggle="product" data-key="' + productKey + '">' +
+              '<td></td><td class="detail-metric-col">Fatturato</td>' + prodRows.revenueRow + '</tr>';
+
+            if (productOpen) {
+              variants.forEach(function (v) {
+                shownLeaves++;
+                var vRows = metricRows(v);
+                html += '<tr class="row-variant row-metric-primary"><td><span class="name-cell">' + v.name + '</span></td>' +
+                  '<td class="detail-metric-col">Unità</td>' + vRows.unitsRow + '</tr>';
+                html += '<tr class="row-variant row-metric-secondary"><td></td>' +
+                  '<td class="detail-metric-col">Fatturato</td>' + vRows.revenueRow + '</tr>';
+              });
+            } else {
+              shownLeaves += variants.length;
+            }
+          });
+        }
+      });
+
+      body.innerHTML = html || ('<tr><td colspan="' + (ALL_DATES.length + 3) + '" style="text-align:center; color:var(--ink-muted); padding:20px;">Nessun risultato</td></tr>');
+      countLabel.textContent = (searchActive || state.category !== 'all' ? shownLeaves + ' di ' : '') + totalLeaves + ' combinazioni prodotto × variante';
+
+      Array.prototype.slice.call(body.querySelectorAll('tr[data-toggle]')).forEach(function (tr) {
+        tr.addEventListener('click', function () {
+          var kind = tr.getAttribute('data-toggle'), key = tr.getAttribute('data-key');
+          if (kind === 'cat') { openCats[key] = !openCats[key]; }
+          else { openProducts[key] = !openProducts[key]; }
+          render();
+        });
+      });
+    }
+
+    searchInput.addEventListener('input', function () { state.search = searchInput.value.toLowerCase(); render(); });
+    catSelect.addEventListener('change', function () { state.category = catSelect.value; render(); });
+    sortSelect.addEventListener('change', function () { state.sortBy = sortSelect.value; render(); });
+    expandAllBtn.addEventListener('click', function () {
+      categories.forEach(function (c) { openCats[c] = true; });
+      var seen = {};
+      productDetailDaily.forEach(function (r) {
+        var k = r[1] + '::' + r[2];
+        if (!seen[k]) { seen[k] = true; openProducts[k] = true; }
+      });
+      render();
+    });
+    collapseAllBtn.addEventListener('click', function () {
+      openCats = {}; openProducts = {}; render();
+    });
+
+    DASH.rerenders.push(render);
+    render();
+  })();
+
+})();
+</script>
