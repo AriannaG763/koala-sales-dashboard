@@ -15,25 +15,34 @@ for (let i = 0; i < expected.length; i++) {
   }
 }
 
+function countryBucket(country) {
+  if (country === 'IT') return 'IT';
+  if (country === 'DE' || country === 'AT') return 'DE_AT';
+  if (country === 'ES') return 'ES';
+  if (country === 'FR') return 'FR';
+  return 'OTHER';
+}
+
 const catProdMap = new Map();
 const catProdVarMap = new Map();
 
 for (let i = 1; i < lines.length; i++) {
   const f = lines[i].split(',');
   if (f.length !== 10) continue;
-  const date = f[0], category = f[1], product = f[2], variant = f[3];
+  const date = f[0], category = f[1], product = f[2], variant = f[3], country = f[4];
   const revenue = parseFloat(f[5]) || 0;
   const units = parseInt(f[6], 10) || 0;
+  const bucket = countryBucket(country);
 
-  const k1 = date + '|' + category + '|' + product;
+  const k1 = date + '|' + category + '|' + product + '|' + bucket;
   let e1 = catProdMap.get(k1);
-  if (!e1) { e1 = { date: date, category: category, product: product, units: 0, revenue: 0 }; catProdMap.set(k1, e1); }
+  if (!e1) { e1 = { date: date, category: category, product: product, bucket: bucket, units: 0, revenue: 0 }; catProdMap.set(k1, e1); }
   e1.units += units;
   e1.revenue += revenue;
 
   const k2 = k1 + '|' + variant;
   let e2 = catProdVarMap.get(k2);
-  if (!e2) { e2 = { date: date, category: category, product: product, variant: variant, units: 0, revenue: 0 }; catProdVarMap.set(k2, e2); }
+  if (!e2) { e2 = { date: date, category: category, product: product, variant: variant, bucket: bucket, units: 0, revenue: 0 }; catProdVarMap.set(k2, e2); }
   e2.units += units;
   e2.revenue += revenue;
 }
@@ -42,11 +51,11 @@ function round2(n) { return Math.round(n * 100) / 100; }
 
 const dailyCatProduct = Array.from(catProdMap.values())
   .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; })
-  .map(function (e) { return [e.date, e.category, e.product, e.units, round2(e.revenue)]; });
+  .map(function (e) { return [e.date, e.category, e.product, e.units, round2(e.revenue), e.bucket]; });
 
 const productDetailDaily = Array.from(catProdVarMap.values())
   .sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; })
-  .map(function (e) { return [e.date, e.category, e.product, e.variant, e.units, round2(e.revenue)]; });
+  .map(function (e) { return [e.date, e.category, e.product, e.variant, e.units, round2(e.revenue), e.bucket]; });
 
 fs.writeFileSync(outDir + '/dailyCatProduct.json', JSON.stringify(dailyCatProduct));
 fs.writeFileSync(outDir + '/productDetailDaily.json', JSON.stringify(productDetailDaily));
