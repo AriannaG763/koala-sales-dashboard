@@ -169,10 +169,6 @@
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 
   /* product detail table */
-  .detail-warning {
-    display: flex; gap: 8px; font-size: 12.5px; color: var(--ink-2); background: var(--paper);
-    border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 4px 0 14px; line-height: 1.5;
-  }
   .detail-controls { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
   .search-input, .cat-select {
     font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
@@ -248,7 +244,7 @@
     </div>
     <div class="snapshot">
       <div><span class="live-dot"></span>Istantanea generata il <strong id="genDate">—</strong></div>
-      <div>Il periodo si seleziona qui sotto · non si aggiorna da sola, va ripubblicata</div>
+      <div>Si aggiorna automaticamente ogni ora</div>
     </div>
   </div>
 
@@ -269,16 +265,29 @@
       <button type="button" class="ghost-btn" data-preset="ytd">Da inizio anno</button>
       <button type="button" class="ghost-btn" data-preset="all">Tutto il periodo</button>
     </div>
+    <div class="date-range-row">
+      <label class="date-field">Paese
+        <select id="countrySelect" class="cat-select">
+          <option value="ALL">Tutti i paesi</option>
+          <option value="IT">Italia</option>
+          <option value="DE_AT">Germania + Austria</option>
+          <option value="ES">Spagna</option>
+          <option value="FR">Francia</option>
+        </select>
+      </label>
+      <div class="metric-toggle" id="levelToggle">
+        <button type="button" class="metric-btn active" data-level="day">Giornaliero</button>
+        <button type="button" class="metric-btn" data-level="week">Settimanale</button>
+        <button type="button" class="metric-btn" data-level="month">Mensile</button>
+      </div>
+    </div>
   </div>
 
   <div class="panel">
     <div class="panel-head">
       <div>
-        <div class="panel-title">Andamento vendite giornaliere</div>
+        <div class="panel-title">Andamento vendite</div>
       </div>
-    </div>
-    <div class="detail-warning">
-      ⚠️ Dati dal foglio Google "Prodotti da Shopify" — perimetro di mercati più ampio (include anche US, UK, CA, AU, ecc.) rispetto al solo store koalababycare.com collegato via Shopify.
     </div>
     <div class="trend-controls">
       <select id="trendCategory" class="cat-select"></select>
@@ -298,12 +307,9 @@
     <div class="panel-head">
       <div>
         <div class="panel-title">Dettaglio prodotti per categoria e variante</div>
-        <div class="panel-note">Fonte: foglio Google "Prodotti da Shopify" (aggiornato quotidianamente)</div>
+        <div class="panel-note">Fonte: foglio Google "Prodotti da Shopify" · dashboard aggiornata automaticamente ogni ora</div>
       </div>
       <div class="panel-note" id="detailCount"></div>
-    </div>
-    <div class="detail-warning">
-      ⚠️ Questo foglio copre un perimetro di mercati più ampio (include anche US, UK, CA, AU, ecc.) rispetto al solo store koalababycare.com collegato via Shopify.
     </div>
     <div class="detail-controls">
       <input type="text" id="detailSearch" class="search-input" placeholder="Cerca prodotto o variante…">
@@ -332,8 +338,7 @@
   </div>
 
   <footer>
-    Dati aggregati dal foglio Google "Prodotti da Shopify" · questa è un'istantanea statica, non un collegamento live.<br>
-    Per tenerla aggiornata, ripubblicare periodicamente con dati freschi.
+    Dati aggregati dal foglio Google "Prodotti da Shopify" · aggiornamento automatico ogni ora tramite GitHub Actions.
   </footer>
 </div>
 
@@ -371,16 +376,16 @@
   };
 
   // Daily units/revenue aggregated from the "Prodotti da Shopify" Google Sheet (tab "Dati"),
-  // grouped by date x category x product (variants merged). Covers the full range currently in the sheet
-  // (2026-01-01 onward) so the in-page date picker can select any sub-range, not just the last 30 days.
-  // Row: [date, category, product, units, revenue]
+  // grouped by date x category x product x country-bucket (variants merged). Covers the full range
+  // currently in the sheet so the in-page date picker can select any sub-range, not just the last 30 days.
+  // Row: [date, category, product, units, revenue, countryBucket]
   var dailyCatProduct = __DAILY_CAT_PRODUCT_JSON__;
   dailyCatProduct.forEach(function (r) { r[1] = normalizeCategory(r[1], r[2]); });
 
   document.getElementById('genDate').textContent = '__GEN_DATE__';
 
-  // ---------- Shared date-range state, used by both the trend chart and the detail table ----------
-  var DASH = { start: null, end: null, minDate: null, maxDate: null, rerenders: [] };
+  // ---------- Shared date-range/level/country state, used by both the trend chart and the detail table ----------
+  var DASH = { start: null, end: null, minDate: null, maxDate: null, level: 'day', country: 'ALL', rerenders: [] };
 
   function addDaysStr(dateStr, delta) {
     var d = new Date(dateStr + 'T00:00:00Z');
@@ -404,6 +409,67 @@
     return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear();
   }
   function dashRerenderAll() { DASH.rerenders.forEach(function (fn) { fn(); }); }
+
+  // ---------- Aggregation-level (day/week/month) bucketing helpers ----------
+  function startOfWeekStr(dateStr) {
+    var d = new Date(dateStr + 'T00:00:00Z');
+    var day = d.getUTCDay();
+    var diff = day === 0 ? -6 : 1 - day;
+    d.setUTCDate(d.getUTCDate() + diff);
+    return d.toISOString().slice(0, 10);
+  }
+  function endOfWeekStr(weekStartStr) { return addDaysStr(weekStartStr, 6); }
+  function monthKeyStr(dateStr) { return dateStr.slice(0, 7); }
+  function endOfMonthStr(monthKeyValue) {
+    var d = new Date(monthKeyValue + '-01T00:00:00Z');
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().slice(0, 10);
+  }
+  function bucketKeyFor(dateStr, level) {
+    if (level === 'week') return startOfWeekStr(dateStr);
+    if (level === 'month') return monthKeyStr(dateStr);
+    return dateStr;
+  }
+  function bucketEndFor(bucketKeyValue, level) {
+    if (level === 'week') return endOfWeekStr(bucketKeyValue);
+    if (level === 'month') return endOfMonthStr(bucketKeyValue);
+    return bucketKeyValue;
+  }
+  function bucketIsPartial(bucketKeyValue, level) {
+    return bucketEndFor(bucketKeyValue, level) > DASH.maxDate;
+  }
+  function bucketRangeList(start, end, level) {
+    if (level === 'day') return dateRangeList(start, end);
+    if (level === 'week') {
+      var out = [], cur = startOfWeekStr(start), endWeek = startOfWeekStr(end), guard = 0;
+      while (cur <= endWeek && guard < 2000) { out.push(cur); cur = addDaysStr(cur, 7); guard++; }
+      return out;
+    }
+    var out2 = [], curM = monthKeyStr(start) + '-01', endM = monthKeyStr(end) + '-01', guard2 = 0;
+    while (curM <= endM && guard2 < 2000) { out2.push(curM.slice(0, 7)); curM = addMonthsStr(curM, 1); guard2++; }
+    return out2;
+  }
+  var MONTHS_IT_SHORT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+  function bucketLabel(bucketKeyValue, level) {
+    if (level === 'month') {
+      var parts = bucketKeyValue.split('-');
+      return MONTHS_IT_SHORT[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+    }
+    var d = new Date(bucketKeyValue + 'T00:00:00Z');
+    return d.getUTCDate() + '/' + (d.getUTCMonth() + 1);
+  }
+  function tooltipDateLabel(bucketKeyValue, level) {
+    if (level === 'day') {
+      var d = new Date(bucketKeyValue + 'T00:00:00Z');
+      return d.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    if (level === 'week') {
+      return fmtItDate(bucketKeyValue) + '–' + fmtItDate(endOfWeekStr(bucketKeyValue));
+    }
+    var parts = bucketKeyValue.split('-');
+    return MONTHS_IT_SHORT[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+  }
 
   // ---------- Date range picker ----------
   (function () {
@@ -455,7 +521,27 @@
     fromInput.addEventListener('change', function () { if (fromInput.value) setRange(fromInput.value, toInput.value || DASH.end, null); });
     toInput.addEventListener('change', function () { if (toInput.value) setRange(fromInput.value || DASH.start, toInput.value, null); });
 
-    presetRange('last30');
+    presetRange('last14');
+  })();
+
+  // ---------- Country + aggregation-level controls (shared) ----------
+  (function () {
+    var countrySelect = document.getElementById('countrySelect');
+    var levelBtns = Array.prototype.slice.call(document.querySelectorAll('#levelToggle .metric-btn'));
+
+    countrySelect.addEventListener('change', function () {
+      DASH.country = countrySelect.value;
+      dashRerenderAll();
+    });
+
+    levelBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        levelBtns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        DASH.level = btn.getAttribute('data-level');
+        dashRerenderAll();
+      });
+    });
   })();
 
   // ---------- Dynamic trend chart (category/product/metric selectable) ----------
@@ -499,19 +585,21 @@
     populateProducts();
 
     function seriesForState() {
-      var allDates = dateRangeList(DASH.start, DASH.end);
+      var buckets = bucketRangeList(DASH.start, DASH.end, DASH.level);
       var rows = dailyCatProduct.filter(function (r) {
         if (r[0] < DASH.start || r[0] > DASH.end) return false;
         if (state.category !== 'all' && r[1] !== state.category) return false;
         if (state.product !== 'all' && r[2] !== state.product) return false;
+        if (DASH.country !== 'ALL' && r[5] !== DASH.country) return false;
         return true;
       });
-      var byDate = {};
-      allDates.forEach(function (d) { byDate[d] = 0; });
+      var byBucket = {};
+      buckets.forEach(function (b) { byBucket[b] = 0; });
       rows.forEach(function (r) {
-        byDate[r[0]] += state.metric === 'units' ? r[3] : r[4];
+        var b = bucketKeyFor(r[0], DASH.level);
+        byBucket[b] += state.metric === 'units' ? r[3] : r[4];
       });
-      return allDates.map(function (d) { return [d, byDate[d]]; });
+      return buckets.map(function (b) { return [b, byBucket[b]]; });
     }
 
     var W = 960, H = 300, padL = 54, padR = 12, padT = 14, padB = 30;
@@ -544,15 +632,13 @@
       }
 
       var tickStep = Math.max(1, Math.round(n / 8));
-      for (var i = 0; i < n; i += tickStep) {
+      for (var i = 0; i < n - 1; i += tickStep) {
         var lbl = el('text', { x: xAt(i), y: H - 8, class: 'axis-label', 'text-anchor': 'middle' });
-        var d0 = new Date(series[i][0] + 'T00:00:00Z');
-        lbl.textContent = d0.getDate() + '/' + (d0.getMonth() + 1);
+        lbl.textContent = bucketLabel(series[i][0], DASH.level);
         svg.appendChild(lbl);
       }
       var lastLbl = el('text', { x: xAt(n - 1), y: H - 8, class: 'axis-label', 'text-anchor': 'end' });
-      var dl = new Date(series[n - 1][0] + 'T00:00:00Z');
-      lastLbl.textContent = dl.getDate() + '/' + (dl.getMonth() + 1);
+      lastLbl.textContent = bucketLabel(series[n - 1][0], DASH.level);
       svg.appendChild(lastLbl);
 
       var areaPts = series.map(function (d, i) { return xAt(i) + ',' + yAt(d[1]); }).join(' L ');
@@ -585,8 +671,7 @@
         crosshair.setAttribute('x1', x); crosshair.setAttribute('x2', x); crosshair.style.opacity = 1;
         dot.setAttribute('cx', x); dot.setAttribute('cy', yAt(d[1])); dot.style.opacity = 1;
 
-        var dt = new Date(d[0] + 'T00:00:00Z');
-        var dateLabel = dt.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' }) + (d[0] === DASH.maxDate ? ' · parziale' : '');
+        var dateLabel = tooltipDateLabel(d[0], DASH.level) + (bucketIsPartial(d[0], DASH.level) ? ' · parziale' : '');
         var metricLabel = state.metric === 'units' ? 'Pezzi venduti' : 'Fatturato totale';
         var valueLabel = state.metric === 'units' ? fmtInt(d[1]) : fmtEUR(d[1], 0);
         tooltip.innerHTML =
@@ -613,10 +698,10 @@
     render();
   })();
 
-  // Daily units/revenue per category/product/variant, aggregated from the "Prodotti da Shopify"
-  // Google Sheet (tab "Dati"). Covers the full range currently in the sheet (2026-01-01 onward) so the
-  // in-page date picker can select any sub-range, not just the last 30 days.
-  // Row: [date, category, product, variant, units, revenue]
+  // Daily units/revenue per category/product/variant/country-bucket, aggregated from the "Prodotti da
+  // Shopify" Google Sheet (tab "Dati"). Covers the full range currently in the sheet so the in-page date
+  // picker can select any sub-range, not just the last 30 days.
+  // Row: [date, category, product, variant, units, revenue, countryBucket]
   var productDetailDaily = __PRODUCT_DETAIL_DAILY_JSON__;
   productDetailDaily.forEach(function (r) { r[1] = normalizeCategory(r[1], r[2]); });
 
@@ -638,8 +723,7 @@
       ALL_DATES.forEach(function (d) {
         var th = document.createElement('th');
         th.className = 'detail-date-col';
-        var dt = new Date(d + 'T00:00:00Z');
-        th.textContent = dt.getDate() + '/' + (dt.getMonth() + 1);
+        th.textContent = bucketLabel(d, DASH.level);
         headRow.appendChild(th);
       });
       var totalTh = document.createElement('th');
@@ -678,17 +762,19 @@
     function buildTree() {
       var cats = {};
       productDetailDaily.forEach(function (r) {
-        var date = r[0], category = r[1], product = r[2], variant = r[3], units = r[4], revenue = r[5];
+        var date = r[0], category = r[1], product = r[2], variant = r[3], units = r[4], revenue = r[5], bucket = r[6];
         if (date < DASH.start || date > DASH.end) return;
+        if (DASH.country !== 'ALL' && bucket !== DASH.country) return;
+        var bkey = bucketKeyFor(date, DASH.level);
         if (!cats[category]) cats[category] = { name: category, units: 0, revenue: 0, byDate: {}, products: {} };
         var cat = cats[category];
-        addDate(cat, date, units, revenue);
+        addDate(cat, bkey, units, revenue);
         if (!cat.products[product]) cat.products[product] = { name: product, units: 0, revenue: 0, byDate: {}, variants: {} };
         var pg = cat.products[product];
-        addDate(pg, date, units, revenue);
+        addDate(pg, bkey, units, revenue);
         if (!pg.variants[variant]) pg.variants[variant] = newNode(variant);
         var vg = pg.variants[variant];
-        addDate(vg, date, units, revenue);
+        addDate(vg, bkey, units, revenue);
       });
       return cats;
     }
@@ -737,7 +823,7 @@
     }
 
     function render() {
-      ALL_DATES = dateRangeList(DASH.start, DASH.end);
+      ALL_DATES = bucketRangeList(DASH.start, DASH.end, DASH.level);
       rebuildDateHeaders();
 
       var tree = buildTree();
@@ -752,6 +838,7 @@
       var allCombos = {};
       productDetailDaily.forEach(function (r) {
         if (r[0] < DASH.start || r[0] > DASH.end) return;
+        if (DASH.country !== 'ALL' && r[6] !== DASH.country) return;
         allCombos[r[1] + '|||' + r[2] + '|||' + r[3]] = true;
       });
       var totalLeaves = Object.keys(allCombos).length;
