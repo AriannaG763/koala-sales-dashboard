@@ -293,7 +293,7 @@
       <select id="trendCategory" class="cat-select"></select>
       <select id="trendProduct" class="cat-select"></select>
       <div class="metric-toggle">
-        <button type="button" class="metric-btn active" data-metric="revenue">Fatturato totale</button>
+        <button type="button" class="metric-btn active" data-metric="revenue">Total Sales</button>
         <button type="button" class="metric-btn" data-metric="units">Pezzi venduti</button>
       </div>
     </div>
@@ -315,7 +315,7 @@
       <input type="text" id="detailSearch" class="search-input" placeholder="Cerca prodotto o variante…">
       <select id="detailCategory" class="cat-select"></select>
       <select id="detailSortBy" class="cat-select">
-        <option value="revenue">Ordina per fatturato</option>
+        <option value="revenue">Ordina per Total Sales</option>
         <option value="units">Ordina per unità</option>
         <option value="name">Ordina alfabeticamente</option>
       </select>
@@ -672,7 +672,7 @@
         dot.setAttribute('cx', x); dot.setAttribute('cy', yAt(d[1])); dot.style.opacity = 1;
 
         var dateLabel = tooltipDateLabel(d[0], DASH.level) + (bucketIsPartial(d[0], DASH.level) ? ' · parziale' : '');
-        var metricLabel = state.metric === 'units' ? 'Pezzi venduti' : 'Fatturato totale';
+        var metricLabel = state.metric === 'units' ? 'Pezzi venduti' : 'Total Sales';
         var valueLabel = state.metric === 'units' ? fmtInt(d[1]) : fmtEUR(d[1], 0);
         tooltip.innerHTML =
           '<div class="t-date">' + dateLabel + '</div>' +
@@ -865,7 +865,7 @@
           '<span class="count-badge">' + visibleProducts.length + ' prodott' + (visibleProducts.length === 1 ? 'o' : 'i') + '</span></span></td>' +
           '<td class="detail-metric-col">Unità</td>' + catRows.unitsRow + '</tr>';
         html += '<tr class="row-cat row-metric-secondary" data-toggle="cat" data-key="' + catKey + '">' +
-          '<td></td><td class="detail-metric-col">Fatturato</td>' + catRows.revenueRow + '</tr>';
+          '<td></td><td class="detail-metric-col">Total Sales</td>' + catRows.revenueRow + '</tr>';
 
         if (catOpen) {
           visibleProducts.forEach(function (entry) {
@@ -879,7 +879,7 @@
               '<span class="count-badge">' + variants.length + ' variant' + (variants.length === 1 ? 'e' : 'i') + '</span></span></td>' +
               '<td class="detail-metric-col">Unità</td>' + prodRows.unitsRow + '</tr>';
             html += '<tr class="row-product row-metric-secondary" data-toggle="product" data-key="' + productKey + '">' +
-              '<td></td><td class="detail-metric-col">Fatturato</td>' + prodRows.revenueRow + '</tr>';
+              '<td></td><td class="detail-metric-col">Total Sales</td>' + prodRows.revenueRow + '</tr>';
 
             if (productOpen) {
               variants.forEach(function (v) {
@@ -888,7 +888,7 @@
                 html += '<tr class="row-variant row-metric-primary"><td><span class="name-cell">' + v.name + '</span></td>' +
                   '<td class="detail-metric-col">Unità</td>' + vRows.unitsRow + '</tr>';
                 html += '<tr class="row-variant row-metric-secondary"><td></td>' +
-                  '<td class="detail-metric-col">Fatturato</td>' + vRows.revenueRow + '</tr>';
+                  '<td class="detail-metric-col">Total Sales</td>' + vRows.revenueRow + '</tr>';
               });
             } else {
               shownLeaves += variants.length;
