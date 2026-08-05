@@ -227,6 +227,21 @@
   #detailTable tr.row-metric-primary td { border-bottom: none; }
   #detailTable .zero-val { color: var(--ink-muted); }
 
+  /* frozen columns (name + metric) while scrolling horizontally through date columns */
+  #detailTable th.detail-name-col, #detailTable td.detail-name-col,
+  #detailTable th.detail-metric-col, #detailTable td.detail-metric-col {
+    position: sticky; z-index: 2; background: var(--surface);
+  }
+  #detailTable th.detail-name-col, #detailTable td.detail-name-col { left: 0; }
+  #detailTable th.detail-metric-col, #detailTable td.detail-metric-col { left: var(--detail-metric-left, 220px); }
+  #detailTable tr.row-cat td.detail-name-col, #detailTable tr.row-cat td.detail-metric-col {
+    background: var(--paper);
+  }
+  #detailTable tr.row-cat:hover td.detail-name-col, #detailTable tr.row-cat:hover td.detail-metric-col,
+  #detailTable tr.row-product:hover td.detail-name-col, #detailTable tr.row-product:hover td.detail-metric-col {
+    background: var(--accent-wash);
+  }
+
   footer { font-size: 12px; color: var(--ink-muted); text-align: center; padding-top: 8px; line-height: 1.7; }
   footer a { text-decoration: underline; text-underline-offset: 2px; }
 
@@ -812,6 +827,12 @@
       };
     }
 
+    function syncStickyOffsets() {
+      var nameTh = headRow.querySelector('th.detail-name-col');
+      var w = nameTh ? nameTh.getBoundingClientRect().width : 220;
+      document.getElementById('detailTable').style.setProperty('--detail-metric-left', w + 'px');
+    }
+
     function sumNodesByDate(nodes) {
       var out = newNode('');
       nodes.forEach(function (n) {
@@ -860,12 +881,12 @@
         var catOpen = searchActive || !!openCats[catKey];
         var catRows = metricRows(catStats);
         html += '<tr class="row-cat row-metric-primary" data-toggle="cat" data-key="' + catKey + '">' +
-          '<td><span class="name-cell"><button type="button" class="row-toggle' + (catOpen ? ' open' : '') + '">▶</button>' +
+          '<td class="detail-name-col"><span class="name-cell"><button type="button" class="row-toggle' + (catOpen ? ' open' : '') + '">▶</button>' +
           '<span class="cat-pill"><span class="dot" style="background:' + meta.color + '"></span>' + meta.label + '</span>' +
           '<span class="count-badge">' + visibleProducts.length + ' prodott' + (visibleProducts.length === 1 ? 'o' : 'i') + '</span></span></td>' +
           '<td class="detail-metric-col">Unità</td>' + catRows.unitsRow + '</tr>';
         html += '<tr class="row-cat row-metric-secondary" data-toggle="cat" data-key="' + catKey + '">' +
-          '<td></td><td class="detail-metric-col">Total Sales</td>' + catRows.revenueRow + '</tr>';
+          '<td class="detail-name-col"></td><td class="detail-metric-col">Total Sales</td>' + catRows.revenueRow + '</tr>';
 
         if (catOpen) {
           visibleProducts.forEach(function (entry) {
@@ -874,20 +895,20 @@
             var productOpen = searchActive || !!openProducts[productKey];
             var prodRows = metricRows(entry.stats);
             html += '<tr class="row-product row-metric-primary" data-toggle="product" data-key="' + productKey + '">' +
-              '<td><span class="name-cell"><button type="button" class="row-toggle' + (productOpen ? ' open' : '') + '">▶</button>' +
+              '<td class="detail-name-col"><span class="name-cell"><button type="button" class="row-toggle' + (productOpen ? ' open' : '') + '">▶</button>' +
               '<span>' + pg.name + '</span>' +
               '<span class="count-badge">' + variants.length + ' variant' + (variants.length === 1 ? 'e' : 'i') + '</span></span></td>' +
               '<td class="detail-metric-col">Unità</td>' + prodRows.unitsRow + '</tr>';
             html += '<tr class="row-product row-metric-secondary" data-toggle="product" data-key="' + productKey + '">' +
-              '<td></td><td class="detail-metric-col">Total Sales</td>' + prodRows.revenueRow + '</tr>';
+              '<td class="detail-name-col"></td><td class="detail-metric-col">Total Sales</td>' + prodRows.revenueRow + '</tr>';
 
             if (productOpen) {
               variants.forEach(function (v) {
                 shownLeaves++;
                 var vRows = metricRows(v);
-                html += '<tr class="row-variant row-metric-primary"><td><span class="name-cell">' + v.name + '</span></td>' +
+                html += '<tr class="row-variant row-metric-primary"><td class="detail-name-col"><span class="name-cell">' + v.name + '</span></td>' +
                   '<td class="detail-metric-col">Unità</td>' + vRows.unitsRow + '</tr>';
-                html += '<tr class="row-variant row-metric-secondary"><td></td>' +
+                html += '<tr class="row-variant row-metric-secondary"><td class="detail-name-col"></td>' +
                   '<td class="detail-metric-col">Total Sales</td>' + vRows.revenueRow + '</tr>';
               });
             } else {
@@ -899,6 +920,7 @@
 
       body.innerHTML = html || ('<tr><td colspan="' + (ALL_DATES.length + 3) + '" style="text-align:center; color:var(--ink-muted); padding:20px;">Nessun risultato</td></tr>');
       countLabel.textContent = (searchActive || state.category !== 'all' ? shownLeaves + ' di ' : '') + totalLeaves + ' combinazioni prodotto × variante';
+      syncStickyOffsets();
 
       Array.prototype.slice.call(body.querySelectorAll('tr[data-toggle]')).forEach(function (tr) {
         tr.addEventListener('click', function () {
